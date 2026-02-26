@@ -1,0 +1,13 @@
+{
+  "name": "flint-root",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "dev": "pnpm -r dev"
+  },
+  "packageManager": "pnpm@9.0.0"
+}

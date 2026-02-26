@@ -1,0 +1,5 @@
+packages:
+  - 'packages/core'
+  - 'packages/cli'
+  - 'packages/app'
+  - 'packages/mcp'
