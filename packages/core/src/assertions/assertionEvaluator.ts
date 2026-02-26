@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module';
+
 import type { ValidateFunction } from 'ajv';
 import type { AssertionResult, AssertionRule, FailureDiff, HttpResponse } from '../types/index.js';
 
@@ -7,11 +9,11 @@ interface AjvInstance {
   compile(schema: object): ValidateFunction;
   errorsText(errors: ValidateFunction['errors']): string;
 }
-// AJV setup with ESM/CJS interop for NodeNext
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const AjvCtor = require('ajv') as { new(opts: { allErrors: boolean }): AjvInstance };
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const addFormats = require('ajv-formats') as (ajv: AjvInstance) => void;
+
+// AJV setup with ESM/CJS interop for NodeNext using createRequire
+const _require = createRequire(import.meta.url);
+const AjvCtor = _require('ajv') as { new(opts: { allErrors: boolean }): AjvInstance };
+const addFormats = _require('ajv-formats') as (ajv: AjvInstance) => void;
 const ajv: AjvInstance = new AjvCtor({ allErrors: true });
 addFormats(ajv);
 

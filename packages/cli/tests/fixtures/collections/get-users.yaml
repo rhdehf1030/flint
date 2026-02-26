@@ -1,0 +1,18 @@
+openapi: '3.0.0'
+info:
+  title: Test API
+  version: 1.0.0
+servers:
+  - url: '{{BASE_URL}}'
+paths:
+  /users:
+    get:
+      operationId: getUsers
+      summary: Get all users
+      responses:
+        '200':
+          description: A list of users
+          content:
+            application/json:
+              schema:
+                type: array

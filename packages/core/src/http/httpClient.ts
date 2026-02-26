@@ -49,7 +49,7 @@ function buildUrl(baseUrl: string, queryParams: Record<string, string | string[]
 }
 
 export async function executeRequest(request: HttpRequest): Promise<HttpResponse> {
-  const { method, headers, body: requestBody, timeoutMs = 30000, followRedirects = true } = request;
+  const { method, headers, body: requestBody, timeoutMs = 30000 } = request;
 
   const { body: bodyData, contentType } = buildBody(requestBody);
   const mergedHeaders: Record<string, string> = { ...headers };
@@ -66,7 +66,6 @@ export async function executeRequest(request: HttpRequest): Promise<HttpResponse
       method,
       headers: mergedHeaders,
       body: bodyData as string | null,
-      maxRedirections: followRedirects ? 5 : 0,
       headersTimeout: timeoutMs,
       bodyTimeout: timeoutMs,
     });

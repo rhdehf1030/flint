@@ -1,0 +1,8 @@
+paths:
+  /test:
+    get:
+      operationId: testOp
+      summary: Missing openapi and info fields
+      responses:
+        '200':
+          description: OK

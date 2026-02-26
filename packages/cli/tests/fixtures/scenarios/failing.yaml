@@ -1,0 +1,7 @@
+x-flint-scenario:
+  name: Failing Test
+  version: '1.0'
+  steps:
+    - operationId: getUsers
+      assertions:
+        - status: 201

@@ -83,6 +83,7 @@ export { generateHtml } from './docs/htmlGenerator.js';
 export { importFromOpenAPI } from './openapi/openapiImporter.js';
 export { importFromSwagger2 } from './openapi/swagger2Importer.js';
 export { importFromPostmanV21 } from './openapi/postmanImporter.js';
+export type { PostmanV21Collection } from './openapi/postmanImporter.js';
 export { exportToOpenAPI } from './openapi/openapiExporter.js';
 export { validateCollectionFile } from './openapi/openapiValidator.js';
 export { generateScenarioFromOpenAPI } from './openapi/scenarioGenerator.js';
