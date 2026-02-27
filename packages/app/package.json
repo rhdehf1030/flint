@@ -2,16 +2,20 @@
   "name": "@flint/app",
   "version": "0.0.0",
   "private": true,
+  "main": "dist/main/index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json && tsc -p tsconfig.main.json && tsc -p tsconfig.renderer.json",
+    "build": "vite build",
+    "build:tsc": "tsc -p tsconfig.main.json && tsc -p tsconfig.renderer.json",
     "dev": "vite",
+    "dist": "pnpm build && electron-builder --config electron-builder.yml",
     "lint": "eslint src --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit",
-    "test:e2e": "playwright test"
+    "typecheck": "tsc --noEmit -p tsconfig.main.json && tsc --noEmit -p tsconfig.renderer.json",
+    "test:e2e": "playwright test --config playwright.config.ts"
   },
   "dependencies": {
     "@flint/core": "workspace:*",
     "@flint/mcp": "workspace:*",
+    "js-yaml": "^4.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "zustand": "^4.5.0"
@@ -20,6 +24,8 @@
     "@types/react": "^18.2.60",
     "@types/react-dom": "^18.2.19",
     "@types/node": "^20.11.0",
+    "@types/js-yaml": "^4.0.9",
+    "@vitejs/plugin-react": "^4.2.1",
     "electron": "^29.1.0",
     "electron-builder": "^24.13.3",
     "vite": "^5.1.4",

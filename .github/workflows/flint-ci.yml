@@ -1,0 +1,133 @@
+name: Flint CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages
+        run: pnpm -r build
+
+      - name: Run core tests
+        run: pnpm --filter @flint/core test
+
+      - name: Run CLI tests
+        run: pnpm --filter @flint/cli test
+
+      - name: Run MCP tests
+        run: pnpm --filter @flint/mcp test
+
+      - name: Typecheck all packages
+        run: pnpm -r typecheck
+
+      - name: Lint all packages
+        run: pnpm -r lint
+
+  flint-scenario-run:
+    name: Flint E2E — Run Example Scenarios
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build CLI
+        run: pnpm --filter @flint/cli build
+
+      - name: Run example scenarios with GitHub Actions reporter
+        run: |
+          if [ -d "examples/scenarios" ]; then
+            node packages/cli/dist/index.js run "examples/scenarios/**/*.yaml" \
+              --reporter github-actions \
+              --collections examples/collections \
+              --env base
+          else
+            echo "No example scenarios found, skipping."
+          fi
+        continue-on-error: true
+
+  mcp-health-check:
+    name: MCP Server Health
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build MCP package
+        run: pnpm --filter @flint/mcp build
+
+      - name: Start MCP server and verify health
+        run: |
+          mkdir -p /tmp/flint-workspace/collections /tmp/flint-workspace/environments
+          echo "BASE_URL=http://localhost" > /tmp/flint-workspace/environments/base.env
+
+          node -e "
+          const { startMcpServer } = require('./packages/mcp/dist/index.js');
+          startMcpServer(3141, '/tmp/flint-workspace').then(async (handle) => {
+            const res = await fetch('http://localhost:3141/health');
+            const body = await res.json();
+            console.log('Health check:', JSON.stringify(body));
+            if (body.status !== 'ok') process.exit(1);
+            await handle.stop();
+            process.exit(0);
+          }).catch((err) => { console.error(err); process.exit(1); });
+          "

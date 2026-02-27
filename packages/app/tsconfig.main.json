@@ -2,8 +2,12 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist/main",
-    "rootDir": "src/main",
-    "lib": ["ES2022"]
+    "rootDir": "src",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": false,
+    "noEmit": false
   },
   "include": ["src/main/**/*.ts", "src/preload/**/*.ts", "src/shared/**/*.ts"],
   "exclude": ["node_modules", "dist"]
