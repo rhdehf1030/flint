@@ -14,11 +14,11 @@ export default defineConfig({
     react(),
     electron([
       {
-        // Main process
-        entry: 'src/main/index.ts',
+        // Main process — entry is resolved relative to project root, not vite root
+        entry: resolve(__dirname, 'src/main/index.ts'),
         vite: {
           build: {
-            outDir: 'dist/main',
+            outDir: resolve(__dirname, 'dist/main'),
             sourcemap: true,
             rollupOptions: {
               external: ['electron', '@flint/core', '@flint/mcp'],
@@ -29,13 +29,13 @@ export default defineConfig({
       },
       {
         // Preload
-        entry: 'src/preload/index.ts',
+        entry: resolve(__dirname, 'src/preload/index.ts'),
         onstart(options) {
           options.reload();
         },
         vite: {
           build: {
-            outDir: 'dist/preload',
+            outDir: resolve(__dirname, 'dist/preload'),
             sourcemap: 'inline',
             rollupOptions: {
               external: ['electron'],
