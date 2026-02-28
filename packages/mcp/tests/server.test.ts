@@ -47,7 +47,7 @@ paths:
 describe('MCP server integration', () => {
   it('starts server and responds to GET /health', async () => {
     const workspaceRoot = makeWorkspace();
-    const handle = await startMcpServer(0, workspaceRoot);
+    const handle = await startMcpServer(0, { root: workspaceRoot });
 
     try {
       // Extract actual port from baseUrl
@@ -64,7 +64,7 @@ describe('MCP server integration', () => {
 
   it('get_collections tool is accessible via SSE endpoint (GET /sse returns SSE headers)', async () => {
     const workspaceRoot = makeWorkspace();
-    const handle = await startMcpServer(0, workspaceRoot);
+    const handle = await startMcpServer(0, { root: workspaceRoot });
 
     try {
       const port = parseInt(new URL(handle.baseUrl).port);

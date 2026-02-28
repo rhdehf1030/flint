@@ -14,7 +14,7 @@ export interface McpServerHandle {
  * Start the Flint MCP server on the specified port.
  * Provides SSE transport (GET /sse, POST /message) and health check (GET /health).
  */
-export async function startMcpServer(port: number, workspaceRoot: string): Promise<McpServerHandle> {
+export async function startMcpServer(port: number, workspaceRef: { root: string }): Promise<McpServerHandle> {
   const app = express();
   app.use(express.json());
 
@@ -35,7 +35,7 @@ export async function startMcpServer(port: number, workspaceRoot: string): Promi
       transports.delete(transport.sessionId);
     });
 
-    const mcpServer = createFlintMcpServer(workspaceRoot);
+    const mcpServer = createFlintMcpServer(workspaceRef);
     await mcpServer.connect(transport);
   });
 

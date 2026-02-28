@@ -16,23 +16,23 @@ import { registerCreateWorkspace } from './tools/createWorkspace.js';
 /**
  * Create and configure the Flint MCP server with all 12 tools registered.
  */
-export function createFlintMcpServer(workspaceRoot: string): McpServer {
+export function createFlintMcpServer(workspaceRef: { root: string }): McpServer {
   const server = new McpServer({
     name: 'flint',
     version: '0.0.0',
   });
 
-  registerRunScenario(server, workspaceRoot);
-  registerGetCollections(server, workspaceRoot);
-  registerCreateRequest(server, workspaceRoot);
+  registerRunScenario(server, workspaceRef);
+  registerGetCollections(server, workspaceRef);
+  registerCreateRequest(server, workspaceRef);
   registerGetLastResult(server);
   registerGenerateScenarioFromOpenAPI(server);
   registerAnalyzeFailure(server);
-  registerMockServerStart(server, workspaceRoot);
+  registerMockServerStart(server, workspaceRef);
   registerMockServerStop(server);
-  registerRunBench(server, workspaceRoot);
-  registerGetHistory(server, workspaceRoot);
-  registerGenerateDocs(server, workspaceRoot);
+  registerRunBench(server, workspaceRef);
+  registerGetHistory(server, workspaceRef);
+  registerGenerateDocs(server, workspaceRef);
   registerCreateWorkspace(server);
 
   return server;

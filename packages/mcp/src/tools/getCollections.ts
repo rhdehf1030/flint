@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { buildCollections } from '@flint/core';
 import { getOperationInfo } from '../utils/collectionUtils.js';
 
-export function registerGetCollections(server: McpServer, workspaceRoot: string): void {
+export function registerGetCollections(server: McpServer, workspaceRef: { root: string }): void {
   server.tool(
     'get_collections',
     'List all available collection operations in the workspace, grouped by collection (folder)',
@@ -13,7 +13,7 @@ export function registerGetCollections(server: McpServer, workspaceRoot: string)
       workspaceRoot: z.string().optional().describe('Workspace root directory (overrides server default)'),
     },
     async (args) => {
-      const ws = args.workspaceRoot ?? workspaceRoot;
+      const ws = args.workspaceRoot ?? workspaceRef.root;
       const collectionsDir = resolve(ws, 'collections');
       const collections = buildCollections(collectionsDir);
 

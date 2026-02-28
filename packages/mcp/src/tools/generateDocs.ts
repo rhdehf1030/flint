@@ -5,7 +5,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { buildCollectionIndex, generateMarkdown, generateHtml } from '@flint/core';
 
-export function registerGenerateDocs(server: McpServer, workspaceRoot: string): void {
+export function registerGenerateDocs(server: McpServer, workspaceRef: { root: string }): void {
   server.tool(
     'generate_docs',
     'Generate API documentation from workspace collections',
@@ -15,7 +15,7 @@ export function registerGenerateDocs(server: McpServer, workspaceRoot: string): 
       workspaceRoot: z.string().optional().describe('Workspace root directory (overrides server default)'),
     },
     (args) => {
-      const ws = args.workspaceRoot ?? workspaceRoot;
+      const ws = args.workspaceRoot ?? workspaceRef.root;
       const format = args.format ?? 'markdown';
       const outputDir = resolve(ws, args.outputDir ?? 'docs');
       const collectionsDir = resolve(ws, 'collections');

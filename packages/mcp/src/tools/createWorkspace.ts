@@ -4,10 +4,6 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
-const DEFAULT_ENV_CONTENT = `# Flint environment variables
-BASE_URL=http://localhost:3000
-`;
-
 export function registerCreateWorkspace(server: McpServer): void {
   server.tool(
     'create_workspace',

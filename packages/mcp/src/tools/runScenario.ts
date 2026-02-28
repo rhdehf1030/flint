@@ -11,7 +11,7 @@ import {
 
 import { resultStore } from '../lruStore.js';
 
-export function registerRunScenario(server: McpServer, workspaceRoot: string): void {
+export function registerRunScenario(server: McpServer, workspaceRef: { root: string }): void {
   server.tool(
     'run_scenario',
     'Run a Flint scenario and return the result as JSON',
@@ -21,7 +21,7 @@ export function registerRunScenario(server: McpServer, workspaceRoot: string): v
       workspaceRoot: z.string().optional().describe('Workspace root directory (overrides server default)'),
     },
     async (args) => {
-      const ws = args.workspaceRoot ?? workspaceRoot;
+      const ws = args.workspaceRoot ?? workspaceRef.root;
       const absPath = resolve(ws, args.scenarioPath);
       const envName = args.env ?? 'base';
       const envDir = resolve(ws, 'environments');

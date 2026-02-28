@@ -101,7 +101,7 @@ app.whenReady().then(async () => {
 
   // Start MCP server
   try {
-    mcpHandle = await startMcpServer(MCP_PORT, workspaceRef.root);
+    mcpHandle = await startMcpServer(MCP_PORT, workspaceRef);
   } catch (err) {
     console.error('[flint] Failed to start MCP server:', err);
   }

@@ -9,7 +9,7 @@ import { buildCollectionIndex, createMockServer } from '@flint/core';
 let activeHttpServer: Server | null = null;
 let activeMockBaseUrl = '';
 
-export function registerMockServerStart(server: McpServer, workspaceRoot: string): void {
+export function registerMockServerStart(server: McpServer, workspaceRef: { root: string }): void {
   server.tool(
     'mock_server_start',
     'Start a mock HTTP server based on collection definitions',
@@ -25,7 +25,7 @@ export function registerMockServerStart(server: McpServer, workspaceRoot: string
       }
 
       const port = args.port ?? 4000;
-      const ws = args.workspaceRoot ?? workspaceRoot;
+      const ws = args.workspaceRoot ?? workspaceRef.root;
       const collectionsDir = resolve(ws, 'collections');
       const index = buildCollectionIndex(collectionsDir);
       const collections = [...index.values()];

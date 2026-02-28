@@ -9,7 +9,7 @@ import {
   runBenchmark,
 } from '@flint/core';
 
-export function registerRunBench(server: McpServer, workspaceRoot: string): void {
+export function registerRunBench(server: McpServer, workspaceRef: { root: string }): void {
   server.tool(
     'run_bench',
     'Run a benchmark against a scenario and return performance metrics',
@@ -23,7 +23,7 @@ export function registerRunBench(server: McpServer, workspaceRoot: string): void
       workspaceRoot: z.string().optional().describe('Workspace root directory (overrides server default)'),
     },
     async (args) => {
-      const ws = args.workspaceRoot ?? workspaceRoot;
+      const ws = args.workspaceRoot ?? workspaceRef.root;
       const absPath = resolve(ws, args.scenarioPath);
       const envName = args.env ?? 'base';
       const envDir = resolve(ws, 'environments');

@@ -4,7 +4,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getHistory } from '@flint/core';
 
-export function registerGetHistory(server: McpServer, workspaceRoot: string): void {
+export function registerGetHistory(server: McpServer, workspaceRef: { root: string }): void {
   server.tool(
     'get_history',
     'Get execution history for a specific operationId',
@@ -14,7 +14,7 @@ export function registerGetHistory(server: McpServer, workspaceRoot: string): vo
       workspaceRoot: z.string().optional().describe('Workspace root directory (overrides server default)'),
     },
     async (args) => {
-      const ws = args.workspaceRoot ?? workspaceRoot;
+      const ws = args.workspaceRoot ?? workspaceRef.root;
       const historyDir = resolve(ws, '.flint', 'history');
       const entries = await getHistory(args.operationId, historyDir, args.limit ?? 10);
 

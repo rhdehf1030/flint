@@ -6,7 +6,7 @@ import { z } from 'zod';
 import yaml from 'js-yaml';
 import { parseCollectionContent } from '@flint/core';
 
-export function registerCreateRequest(server: McpServer, workspaceRoot: string): void {
+export function registerCreateRequest(server: McpServer, workspaceRef: { root: string }): void {
   server.tool(
     'create_request',
     'Create a new collection request file from an OpenAPI 3.x spec object',
@@ -16,7 +16,7 @@ export function registerCreateRequest(server: McpServer, workspaceRoot: string):
       workspaceRoot: z.string().optional().describe('Workspace root directory (overrides server default)'),
     },
     (args) => {
-      const ws = args.workspaceRoot ?? workspaceRoot;
+      const ws = args.workspaceRoot ?? workspaceRef.root;
       const specObj = JSON.parse(args.spec) as Record<string, unknown>;
 
       // Validate using parseCollectionContent
