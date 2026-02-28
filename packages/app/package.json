@@ -2,9 +2,10 @@
   "name": "@flint/app",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "main": "dist/main/index.js",
   "scripts": {
-    "build": "vite build",
+    "build": "tsc -p tsconfig.main.json && vite build",
     "build:tsc": "tsc -p tsconfig.main.json && tsc -p tsconfig.renderer.json",
     "dev": "vite",
     "dist": "pnpm build && electron-builder --config electron-builder.yml",
@@ -15,6 +16,8 @@
   "dependencies": {
     "@flint/core": "workspace:*",
     "@flint/mcp": "workspace:*",
+    "ajv": "^8.12.0",
+    "ajv-formats": "^3.0.1",
     "js-yaml": "^4.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

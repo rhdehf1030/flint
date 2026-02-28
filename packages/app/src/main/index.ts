@@ -1,6 +1,9 @@
 import { app, BrowserWindow, shell, dialog } from 'electron';
 import { join, resolve } from 'node:path';
 import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 import { startMcpServer } from '@flint/mcp';
 import type { McpServerHandle } from '@flint/mcp';
