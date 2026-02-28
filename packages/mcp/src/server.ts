@@ -23,6 +23,7 @@ import { registerGenerateSnippet } from './tools/generateSnippet.js';
 import { registerValidateRequest } from './tools/validateRequest.js';
 import { registerExportOpenapi } from './tools/exportOpenapi.js';
 import { registerCompareHistory } from './tools/compareHistory.js';
+import { registerGetWorkspace } from './tools/getWorkspace.js';
 
 /**
  * Create and configure the Flint MCP server with all 23 tools registered.
@@ -40,6 +41,7 @@ export function createFlintMcpServer(workspaceRef: { root: string }): McpServer 
   registerDiffRun(server, workspaceRef);
 
   // Collections & workspace
+  registerGetWorkspace(server, workspaceRef);
   registerGetCollections(server, workspaceRef);
   registerCreateRequest(server, workspaceRef);
   registerCreateWorkspace(server);
