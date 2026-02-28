@@ -70,6 +70,14 @@ function App(): React.ReactElement {
     void loadAuthProfiles();
   }, []);
 
+  // Reload when workspace files change (MCP / CLI / editor writes)
+  useEffect(() => {
+    return flint.on('workspace-changed', () => {
+      void loadCollections();
+      void loadEnvList();
+    });
+  }, []);
+
   useEffect(() => {
     void loadEnvMap();
   }, [activeEnv]);

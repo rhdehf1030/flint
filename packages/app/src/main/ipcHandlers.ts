@@ -44,6 +44,7 @@ export function registerIpcHandlers(
   workspaceRef: { root: string },
   config: WorkspaceConfig,
   saveConfig: (c: WorkspaceConfig) => void,
+  onWorkspaceSwitch?: (newRoot: string) => void,
 ): void {
   const collectionsDir = () => join(workspaceRef.root, 'collections');
   const environmentsDir = () => join(workspaceRef.root, 'environments');
@@ -306,6 +307,7 @@ export function registerIpcHandlers(
     if (config.active === path) {
       config.active = config.workspaces[0] ?? workspaceRef.root;
       workspaceRef.root = config.active;
+      onWorkspaceSwitch?.(workspaceRef.root);
     }
     saveConfig(config);
     return { paths: config.workspaces, active: config.active };
@@ -319,6 +321,7 @@ export function registerIpcHandlers(
     }
     config.active = path;
     workspaceRef.root = path;
+    onWorkspaceSwitch?.(path);
     saveConfig(config);
     return { paths: config.workspaces, active: config.active };
   });

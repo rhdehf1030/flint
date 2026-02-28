@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { FlintBridge, IpcChannel, IpcRequest, IpcResponse } from '../shared/ipc.js';
+import type { FlintBridge, IpcChannel, IpcPushEvent, IpcRequest, IpcResponse } from '../shared/ipc.js';
 
 const flint: FlintBridge = {
   invoke<C extends IpcChannel>(
@@ -7,6 +7,12 @@ const flint: FlintBridge = {
     args: Extract<IpcRequest, { channel: C }>,
   ): Promise<IpcResponse<C>> {
     return ipcRenderer.invoke(channel, args) as Promise<IpcResponse<C>>;
+  },
+
+  on(event: IpcPushEvent, listener: () => void): () => void {
+    const handler = () => listener();
+    ipcRenderer.on(event, handler);
+    return () => { ipcRenderer.removeListener(event, handler); };
   },
 };
 

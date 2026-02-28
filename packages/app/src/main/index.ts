@@ -2,6 +2,7 @@ import { app, BrowserWindow, shell, dialog, ipcMain } from 'electron';
 import { join } from 'node:path';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import chokidar from 'chokidar';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -14,6 +15,35 @@ const MCP_PORT = 3141;
 
 let mcpHandle: McpServerHandle | null = null;
 let mainWindow: BrowserWindow | null = null;
+let watcher: chokidar.FSWatcher | null = null;
+
+// ---------------------------------------------------------------------------
+// File watcher — notifies renderer when workspace files change
+// ---------------------------------------------------------------------------
+
+function startWatcher(root: string): void {
+  if (watcher) { void watcher.close(); watcher = null; }
+
+  const watchDirs = ['collections', 'environments', 'scenarios']
+    .map((d) => join(root, d))
+    .filter(existsSync);
+
+  if (watchDirs.length === 0) return;
+
+  let debounce: ReturnType<typeof setTimeout> | null = null;
+
+  watcher = chokidar.watch(watchDirs, {
+    ignoreInitial: true,
+    awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 100 },
+  });
+
+  watcher.on('all', () => {
+    if (debounce) clearTimeout(debounce);
+    debounce = setTimeout(() => {
+      mainWindow?.webContents.send('workspace-changed');
+    }, 300);
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Workspace config — persisted in userData/workspaces.json
@@ -107,7 +137,10 @@ app.whenReady().then(async () => {
   }
 
   // Register all IPC handlers (including workspace management)
-  registerIpcHandlers(workspaceRef, config, saveWorkspaceConfig);
+  registerIpcHandlers(workspaceRef, config, saveWorkspaceConfig, (newRoot) => {
+    startWatcher(newRoot);
+    mainWindow?.webContents.send('workspace-changed');
+  });
 
   // Workspace dialog handler — pass mainWindow so dialog is not hidden behind it
   ipcMain.handle('open-workspace', async () => {
@@ -119,6 +152,7 @@ app.whenReady().then(async () => {
   });
 
   await createWindow();
+  startWatcher(workspaceRef.root);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -134,6 +168,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('quit', async () => {
+  if (watcher) { await watcher.close(); watcher = null; }
   if (mcpHandle) {
     await mcpHandle.stop().catch(() => undefined);
     mcpHandle = null;

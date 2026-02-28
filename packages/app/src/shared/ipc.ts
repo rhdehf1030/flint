@@ -98,6 +98,12 @@ export type IpcChannel = IpcRequest['channel'];
 export type IpcResponse<C extends IpcChannel> = IpcResponseMap[C];
 
 // ---------------------------------------------------------------------------
+// Push events (main → renderer, no response)
+// ---------------------------------------------------------------------------
+
+export type IpcPushEvent = 'workspace-changed';
+
+// ---------------------------------------------------------------------------
 // Typed invoke helper (used in preload & renderer)
 // ---------------------------------------------------------------------------
 
@@ -106,4 +112,6 @@ export type FlintBridge = {
     channel: C,
     args: Extract<IpcRequest, { channel: C }>,
   ): Promise<IpcResponse<C>>;
+  /** Subscribe to a push event from the main process. Returns an unsubscribe function. */
+  on(event: IpcPushEvent, listener: () => void): () => void;
 };
