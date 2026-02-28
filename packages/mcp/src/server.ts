@@ -12,9 +12,20 @@ import { registerRunBench } from './tools/runBench.js';
 import { registerGetHistory } from './tools/getHistory.js';
 import { registerGenerateDocs } from './tools/generateDocs.js';
 import { registerCreateWorkspace } from './tools/createWorkspace.js';
+import { registerRunRequest } from './tools/runRequest.js';
+import { registerImportOpenapi } from './tools/importOpenapi.js';
+import { registerImportPostman } from './tools/importPostman.js';
+import { registerListScenarios } from './tools/listScenarios.js';
+import { registerListEnvironments } from './tools/listEnvironments.js';
+import { registerCreateScenario } from './tools/createScenario.js';
+import { registerDiffRun } from './tools/diffRun.js';
+import { registerGenerateSnippet } from './tools/generateSnippet.js';
+import { registerValidateRequest } from './tools/validateRequest.js';
+import { registerExportOpenapi } from './tools/exportOpenapi.js';
+import { registerCompareHistory } from './tools/compareHistory.js';
 
 /**
- * Create and configure the Flint MCP server with all 12 tools registered.
+ * Create and configure the Flint MCP server with all 23 tools registered.
  */
 export function createFlintMcpServer(workspaceRef: { root: string }): McpServer {
   const server = new McpServer({
@@ -22,18 +33,42 @@ export function createFlintMcpServer(workspaceRef: { root: string }): McpServer 
     version: '0.0.0',
   });
 
+  // Core execution
   registerRunScenario(server, workspaceRef);
+  registerRunRequest(server, workspaceRef);
+  registerRunBench(server, workspaceRef);
+  registerDiffRun(server, workspaceRef);
+
+  // Collections & workspace
   registerGetCollections(server, workspaceRef);
   registerCreateRequest(server, workspaceRef);
-  registerGetLastResult(server);
+  registerCreateWorkspace(server);
+  registerImportOpenapi(server, workspaceRef);
+  registerImportPostman(server, workspaceRef);
+  registerExportOpenapi(server, workspaceRef);
+  registerValidateRequest(server, workspaceRef);
+
+  // Scenarios
+  registerListScenarios(server, workspaceRef);
+  registerCreateScenario(server, workspaceRef);
   registerGenerateScenarioFromOpenAPI(server);
-  registerAnalyzeFailure(server);
+
+  // Environments
+  registerListEnvironments(server, workspaceRef);
+
+  // Mock server
   registerMockServerStart(server, workspaceRef);
   registerMockServerStop(server);
-  registerRunBench(server, workspaceRef);
+
+  // History & results
   registerGetHistory(server, workspaceRef);
+  registerGetLastResult(server);
+  registerAnalyzeFailure(server);
+  registerCompareHistory(server, workspaceRef);
+
+  // Docs & snippets
   registerGenerateDocs(server, workspaceRef);
-  registerCreateWorkspace(server);
+  registerGenerateSnippet(server, workspaceRef);
 
   return server;
 }
