@@ -7,7 +7,7 @@ import type {
   ScenarioResult,
   BenchmarkResult,
   BenchmarkOptions,
-  CollectionRequest,
+  Collection,
   HistoryEntry,
   DocumentationOutput,
   EncryptedEnvFile,
@@ -54,7 +54,11 @@ export type IpcRequest =
   | { channel: 'get-auth-profiles' }
   | { channel: 'run-diff-scenario'; scenarioPath: string; envA: string; envB: string }
   | { channel: 'open-workspace' }
-  | { channel: 'get-workspace-root' };
+  | { channel: 'get-workspace-root' }
+  | { channel: 'list-workspaces' }
+  | { channel: 'add-workspace'; path: string }
+  | { channel: 'remove-workspace'; path: string }
+  | { channel: 'switch-workspace'; path: string };
 
 // ---------------------------------------------------------------------------
 // Responses
@@ -62,7 +66,7 @@ export type IpcRequest =
 
 export type IpcResponseMap = {
   'run-scenario': ScenarioResult;
-  'get-collections': CollectionRequest[];
+  'get-collections': Collection[];
   'build-request': HttpRequest;
   'execute-request': HttpResponse;
   'validate-collection': ValidationResult;
@@ -83,6 +87,10 @@ export type IpcResponseMap = {
   'run-diff-scenario': DiffRunResult;
   'open-workspace': string | null;
   'get-workspace-root': string;
+  'list-workspaces': { paths: string[]; active: string };
+  'add-workspace': { paths: string[]; active: string };
+  'remove-workspace': { paths: string[]; active: string };
+  'switch-workspace': { paths: string[]; active: string };
 };
 
 export type IpcChannel = IpcRequest['channel'];

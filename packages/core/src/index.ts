@@ -18,7 +18,7 @@ export {
   CollectionParseError,
   DuplicateOperationIdError,
 } from './collection/collectionParser.js';
-export { buildCollectionIndex } from './collection/collectionIndex.js';
+export { buildCollectionIndex, buildCollections } from './collection/collectionIndex.js';
 
 // scenario module
 export {

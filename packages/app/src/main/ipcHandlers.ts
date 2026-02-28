@@ -1,12 +1,13 @@
-import { ipcMain, dialog } from 'electron';
+import { ipcMain } from 'electron';
 import { join } from 'node:path';
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { createServer } from 'node:http';
 import type { Server } from 'node:http';
 
 import {
   runScenario,
   buildCollectionIndex,
+  buildCollections,
   parseCollectionFile,
   parseScenarioFile,
   buildRequest,
@@ -30,6 +31,8 @@ import {
 } from '@flint/core';
 import type { MockServerHandle } from '@flint/core';
 
+import type { WorkspaceConfig } from './index.js';
+
 interface ActiveMock {
   logic: MockServerHandle & { handle: (method: string, path: string) => Promise<{ status: number; headers: Record<string, string>; body: unknown; delay: number }> };
   server: Server;
@@ -37,11 +40,15 @@ interface ActiveMock {
 
 let activeMock: ActiveMock | null = null;
 
-export function registerIpcHandlers(workspaceRoot: string): void {
-  const collectionsDir = () => join(workspaceRoot, 'collections');
-  const environmentsDir = () => join(workspaceRoot, 'environments');
-  const historyDir = () => join(workspaceRoot, '.flint', 'history');
-  const authDir = () => join(workspaceRoot, '.flint', 'auth');
+export function registerIpcHandlers(
+  workspaceRef: { root: string },
+  config: WorkspaceConfig,
+  saveConfig: (c: WorkspaceConfig) => void,
+): void {
+  const collectionsDir = () => join(workspaceRef.root, 'collections');
+  const environmentsDir = () => join(workspaceRef.root, 'environments');
+  const historyDir = () => join(workspaceRef.root, '.flint', 'history');
+  const authDir = () => join(workspaceRef.root, '.flint', 'auth');
 
   // run-scenario
   ipcMain.handle('run-scenario', async (_event, args) => {
@@ -52,11 +59,10 @@ export function registerIpcHandlers(workspaceRoot: string): void {
     return runScenario(scenario, index, envMap);
   });
 
-  // get-collections
+  // get-collections — returns Collection[] grouped by first-level subfolder
   ipcMain.handle('get-collections', async (_event, args) => {
     const { collectionsDir: dir } = (args ?? {}) as { collectionsDir?: string };
-    const index = await buildCollectionIndex(dir ?? collectionsDir());
-    return Array.from(index.values());
+    return buildCollections(dir ?? collectionsDir());
   });
 
   // build-request
@@ -203,7 +209,7 @@ export function registerIpcHandlers(workspaceRoot: string): void {
 
   // generate-docs
   ipcMain.handle('generate-docs', async (_event, args) => {
-    const { format = 'markdown', outputDir = join(workspaceRoot, 'docs') } = (args ?? {}) as {
+    const { format = 'markdown', outputDir = join(workspaceRef.root, 'docs') } = (args ?? {}) as {
       format?: 'markdown' | 'html';
       outputDir?: string;
     };
@@ -273,15 +279,47 @@ export function registerIpcHandlers(workspaceRoot: string): void {
     return runDiffScenario(scenario, index, mapA, mapB);
   });
 
-  // open-workspace
-  ipcMain.handle('open-workspace', async () => {
-    const result = await dialog.showOpenDialog({
-      properties: ['openDirectory'],
-      title: 'Open Flint Workspace',
-    });
-    return result.filePaths[0] ?? null;
+  // get-workspace-root
+  ipcMain.handle('get-workspace-root', () => workspaceRef.root);
+
+  // list-workspaces
+  ipcMain.handle('list-workspaces', () => ({
+    paths: config.workspaces,
+    active: config.active,
+  }));
+
+  // add-workspace
+  ipcMain.handle('add-workspace', (_event, args) => {
+    const { path } = args as { path: string };
+    if (!existsSync(path)) return { paths: config.workspaces, active: config.active };
+    if (!config.workspaces.includes(path)) {
+      config.workspaces.push(path);
+    }
+    saveConfig(config);
+    return { paths: config.workspaces, active: config.active };
   });
 
-  // get-workspace-root
-  ipcMain.handle('get-workspace-root', () => workspaceRoot);
+  // remove-workspace
+  ipcMain.handle('remove-workspace', (_event, args) => {
+    const { path } = args as { path: string };
+    config.workspaces = config.workspaces.filter((w) => w !== path);
+    if (config.active === path) {
+      config.active = config.workspaces[0] ?? workspaceRef.root;
+      workspaceRef.root = config.active;
+    }
+    saveConfig(config);
+    return { paths: config.workspaces, active: config.active };
+  });
+
+  // switch-workspace
+  ipcMain.handle('switch-workspace', (_event, args) => {
+    const { path } = args as { path: string };
+    if (!config.workspaces.includes(path)) {
+      config.workspaces.push(path);
+    }
+    config.active = path;
+    workspaceRef.root = path;
+    saveConfig(config);
+    return { paths: config.workspaces, active: config.active };
+  });
 }

@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import type { CollectionRequest } from '@flint/core';
+import type { Collection, CollectionRequest } from '@flint/core';
 import { getOperationInfo } from '../utils/collectionUtils.js';
 
 interface Props {
-  collections: CollectionRequest[];
+  collections: Collection[];
   onSelect: (collection: CollectionRequest) => void;
 }
 
@@ -12,11 +12,17 @@ export function CollectionSearch({ collections, onSelect }: Props): React.ReactE
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
-    if (!q) return collections;
-    return collections.filter((c) => {
-      const op = getOperationInfo(c);
-      return op.operationId.toLowerCase().includes(q) || (op.summary ?? '').toLowerCase().includes(q);
-    });
+    if (!q) return [];
+    const results: CollectionRequest[] = [];
+    for (const col of collections) {
+      for (const req of col.requests) {
+        const op = getOperationInfo(req);
+        if (op.operationId.toLowerCase().includes(q) || (op.summary ?? '').toLowerCase().includes(q)) {
+          results.push(req);
+        }
+      }
+    }
+    return results;
   }, [collections, query]);
 
   return (
@@ -35,6 +41,7 @@ export function CollectionSearch({ collections, onSelect }: Props): React.ReactE
           padding: '4px 8px',
           fontSize: 12,
           outline: 'none',
+          boxSizing: 'border-box',
         }}
       />
       {query && (
@@ -49,7 +56,7 @@ export function CollectionSearch({ collections, onSelect }: Props): React.ReactE
             return (
               <div
                 key={op.operationId}
-                onClick={() => onSelect(c)}
+                onClick={() => { onSelect(c); setQuery(''); }}
                 style={{
                   padding: '4px 6px',
                   cursor: 'pointer',

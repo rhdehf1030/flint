@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { CollectionRequest, ScenarioResult, HistoryEntry, AuthProfile, HttpRequest, HttpResponse } from '@flint/core';
+import type { Collection, CollectionRequest, ScenarioResult, HistoryEntry, AuthProfile, HttpRequest, HttpResponse } from '@flint/core';
 
 export interface ActiveRequest {
   collection: CollectionRequest;
@@ -8,9 +8,11 @@ export interface ActiveRequest {
 }
 
 export interface AppState {
-  // Workspace
-  workspaceRoot: string;
-  setWorkspaceRoot: (root: string) => void;
+  // Workspaces
+  workspaces: string[];
+  activeWorkspace: string;
+  setWorkspaces: (workspaces: string[], active: string) => void;
+  setActiveWorkspace: (path: string) => void;
 
   // Environment
   activeEnv: string;
@@ -18,9 +20,9 @@ export interface AppState {
   setActiveEnv: (env: string) => void;
   setEnvList: (envs: string[]) => void;
 
-  // Collections
-  collections: CollectionRequest[];
-  setCollections: (collections: CollectionRequest[]) => void;
+  // Collections (grouped by folder)
+  collections: Collection[];
+  setCollections: (collections: Collection[]) => void;
 
   // Active request editor
   activeRequest: ActiveRequest | null;
@@ -40,7 +42,7 @@ export interface AppState {
   setAuthProfiles: (profiles: AuthProfile[]) => void;
 
   // UI state
-  activePanel: 'request' | 'scenarios' | 'history' | 'bench' | 'graphql' | 'websocket' | 'docs';
+  activePanel: 'request' | 'scenarios' | 'history' | 'bench' | 'graphql' | 'websocket' | 'docs' | 'env' | 'auth';
   setActivePanel: (panel: AppState['activePanel']) => void;
 
   sidebarCollapsed: boolean;
@@ -48,9 +50,11 @@ export interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  // Workspace
-  workspaceRoot: '',
-  setWorkspaceRoot: (workspaceRoot) => set({ workspaceRoot }),
+  // Workspaces
+  workspaces: [],
+  activeWorkspace: '',
+  setWorkspaces: (workspaces, active) => set({ workspaces, activeWorkspace: active }),
+  setActiveWorkspace: (activeWorkspace) => set({ activeWorkspace }),
 
   // Environment
   activeEnv: 'base',

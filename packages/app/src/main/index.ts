@@ -1,6 +1,6 @@
-import { app, BrowserWindow, shell, dialog } from 'electron';
-import { join, resolve } from 'node:path';
-import { existsSync } from 'node:fs';
+import { app, BrowserWindow, shell, dialog, ipcMain } from 'electron';
+import { join } from 'node:path';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -15,15 +15,50 @@ const MCP_PORT = 3141;
 let mcpHandle: McpServerHandle | null = null;
 let mainWindow: BrowserWindow | null = null;
 
-// Determine workspace root: directory containing a `collections/` folder,
-// falling back to the user's home directory.
-function resolveWorkspaceRoot(): string {
+// ---------------------------------------------------------------------------
+// Workspace config — persisted in userData/workspaces.json
+// ---------------------------------------------------------------------------
+
+export interface WorkspaceConfig {
+  workspaces: string[];
+  active: string;
+}
+
+function getWorkspaceConfigPath(): string {
+  return join(app.getPath('userData'), 'workspaces.json');
+}
+
+function loadWorkspaceConfig(): WorkspaceConfig {
+  const configPath = getWorkspaceConfigPath();
+  if (existsSync(configPath)) {
+    try {
+      return JSON.parse(readFileSync(configPath, 'utf-8')) as WorkspaceConfig;
+    } catch {
+      // fall through to default
+    }
+  }
+  // Default: detect from cwd or home
+  const detected = detectWorkspaceRoot();
+  return { workspaces: [detected], active: detected };
+}
+
+export function saveWorkspaceConfig(config: WorkspaceConfig): void {
+  const configPath = getWorkspaceConfigPath();
+  mkdirSync(join(configPath, '..'), { recursive: true });
+  writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+}
+
+function detectWorkspaceRoot(): string {
   const cwd = process.cwd();
   if (existsSync(join(cwd, 'collections'))) return cwd;
   return app.getPath('home');
 }
 
-async function createWindow(workspaceRoot: string): Promise<void> {
+// ---------------------------------------------------------------------------
+// Window
+// ---------------------------------------------------------------------------
+
+async function createWindow(): Promise<void> {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -42,7 +77,6 @@ async function createWindow(workspaceRoot: string): Promise<void> {
     mainWindow = null;
   });
 
-  // Open external links in default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     void shell.openExternal(url);
     return { action: 'deny' };
@@ -57,24 +91,38 @@ async function createWindow(workspaceRoot: string): Promise<void> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// App lifecycle
+// ---------------------------------------------------------------------------
+
 app.whenReady().then(async () => {
-  const workspaceRoot = resolveWorkspaceRoot();
+  const config = loadWorkspaceConfig();
+  const workspaceRef = { root: config.active };
 
   // Start MCP server
   try {
-    mcpHandle = await startMcpServer(MCP_PORT, workspaceRoot);
+    mcpHandle = await startMcpServer(MCP_PORT, workspaceRef.root);
   } catch (err) {
     console.error('[flint] Failed to start MCP server:', err);
   }
 
-  // Register all IPC handlers
-  registerIpcHandlers(workspaceRoot);
+  // Register all IPC handlers (including workspace management)
+  registerIpcHandlers(workspaceRef, config, saveWorkspaceConfig);
 
-  await createWindow(workspaceRoot);
+  // Workspace dialog handler — needs access to workspaceRef and config
+  ipcMain.handle('open-workspace', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory'],
+      title: 'Open Flint Workspace',
+    });
+    return result.filePaths[0] ?? null;
+  });
+
+  await createWindow();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      void createWindow(workspaceRoot);
+      void createWindow();
     }
   });
 });

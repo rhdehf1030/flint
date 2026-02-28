@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { FlintBridge } from '../shared/ipc.js';
-import type { CollectionRequest, ScenarioResult, HistoryEntry, HttpRequest, HttpResponse, BenchmarkResult } from '@flint/core';
+import type { CollectionRequest, ScenarioResult, HttpRequest, HttpResponse, BenchmarkResult } from '@flint/core';
 
 import { CollectionTree } from './components/CollectionTree.js';
 import { RequestEditor } from './components/RequestEditor.js';
@@ -17,6 +17,7 @@ import { GraphQLEditor } from './components/GraphQLEditor.js';
 import { WebSocketPanel } from './components/WebSocketPanel.js';
 import { BenchmarkPanel } from './components/BenchmarkPanel.js';
 import { DocViewer } from './components/DocViewer.js';
+import { WorkspaceSwitcher } from './components/WorkspaceSwitcher.js';
 import { useAppStore } from './store/appStore.js';
 import { getOperationInfo } from './utils/collectionUtils.js';
 
@@ -45,6 +46,7 @@ const NAV_ITEMS: { id: MainPanel; icon: string; label: string }[] = [
 function App(): React.ReactElement {
   const {
     collections, setCollections,
+    workspaces, activeWorkspace, setWorkspaces,
     activeEnv, setActiveEnv, envList, setEnvList,
     activeRequest, setActiveRequest, setResponse,
     lastScenarioResult, setLastScenarioResult,
@@ -62,6 +64,7 @@ function App(): React.ReactElement {
 
   // Load initial data
   useEffect(() => {
+    void loadWorkspaces();
     void loadCollections();
     void loadEnvList();
     void loadAuthProfiles();
@@ -70,6 +73,15 @@ function App(): React.ReactElement {
   useEffect(() => {
     void loadEnvMap();
   }, [activeEnv]);
+
+  const loadWorkspaces = async () => {
+    try {
+      const result = await flint.invoke('list-workspaces', { channel: 'list-workspaces' });
+      setWorkspaces(result.paths, result.active);
+    } catch {
+      // ignore
+    }
+  };
 
   const loadCollections = async () => {
     try {
@@ -108,11 +120,42 @@ function App(): React.ReactElement {
     }
   };
 
+  const handleSwitchWorkspace = async (path: string) => {
+    try {
+      const result = await flint.invoke('switch-workspace', { channel: 'switch-workspace', path });
+      setWorkspaces(result.paths, result.active);
+      await loadCollections();
+      await loadEnvList();
+    } catch (err) {
+      console.error('Failed to switch workspace:', err);
+    }
+  };
+
+  const handleAddWorkspace = async () => {
+    try {
+      const path = await flint.invoke('open-workspace', { channel: 'open-workspace' });
+      if (!path) return;
+      const result = await flint.invoke('add-workspace', { channel: 'add-workspace', path });
+      setWorkspaces(result.paths, result.active);
+      await handleSwitchWorkspace(path);
+    } catch (err) {
+      console.error('Failed to add workspace:', err);
+    }
+  };
+
+  const handleRemoveWorkspace = async (path: string) => {
+    try {
+      const result = await flint.invoke('remove-workspace', { channel: 'remove-workspace', path });
+      setWorkspaces(result.paths, result.active);
+    } catch (err) {
+      console.error('Failed to remove workspace:', err);
+    }
+  };
+
   const handleCollectionSelect = (collection: CollectionRequest) => {
     const op = getOperationInfo(collection);
     setActiveRequest({ collection });
     setPanel('request');
-    // Load history for the selected operation
     void flint.invoke('get-history', { channel: 'get-history', operationId: op.operationId })
       .then((h) => setHistory(op.operationId, h))
       .catch(() => undefined);
@@ -131,13 +174,9 @@ function App(): React.ReactElement {
       };
       const res = await flint.invoke('execute-request', { channel: 'execute-request', request: req });
       setResponse(res);
-      // Load history for the active operation
       if (activeRequest?.collection) {
         const op = getOperationInfo(activeRequest.collection);
-        const h = await flint.invoke('get-history', {
-          channel: 'get-history',
-          operationId: op.operationId,
-        });
+        const h = await flint.invoke('get-history', { channel: 'get-history', operationId: op.operationId });
         setHistory(op.operationId, h);
       }
     } catch (err) {
@@ -151,11 +190,7 @@ function App(): React.ReactElement {
     setRunningScenario(scenarioPath);
     setPanel('scenarios');
     try {
-      const result = await flint.invoke('run-scenario', {
-        channel: 'run-scenario',
-        scenarioPath,
-        env: activeEnv,
-      });
+      const result = await flint.invoke('run-scenario', { channel: 'run-scenario', scenarioPath, env: activeEnv });
       setLastScenarioResult(result);
     } catch (err) {
       console.error('Scenario failed:', err);
@@ -177,11 +212,7 @@ function App(): React.ReactElement {
   const handleGenerateSnippet = async (target: Parameters<typeof flint.invoke<'generate-snippet'>>[1]['target']) => {
     if (!activeRequest?.request) return '';
     try {
-      const snippet = await flint.invoke('generate-snippet', {
-        channel: 'generate-snippet',
-        request: activeRequest.request,
-        target,
-      });
+      const snippet = await flint.invoke('generate-snippet', { channel: 'generate-snippet', request: activeRequest.request, target });
       return snippet.code;
     } catch {
       return '';
@@ -221,8 +252,17 @@ function App(): React.ReactElement {
         ))}
       </div>
 
-      {/* Left panel: collection tree */}
+      {/* Left panel: workspace + collection tree */}
       <div style={{ width: 240, borderRight: '1px solid #313244', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
+        <div style={{ borderBottom: '1px solid #313244' }}>
+          <WorkspaceSwitcher
+            workspaces={workspaces}
+            active={activeWorkspace}
+            onSwitch={handleSwitchWorkspace}
+            onAdd={handleAddWorkspace}
+            onRemove={handleRemoveWorkspace}
+          />
+        </div>
         <div style={{ padding: '6px 0', borderBottom: '1px solid #313244' }}>
           <EnvironmentSelector />
         </div>
@@ -242,12 +282,7 @@ function App(): React.ReactElement {
             {activeRequest ? (
               <>
                 <div style={{ flex: '0 0 280px', borderBottom: '1px solid #313244', overflow: 'hidden' }}>
-                  <RequestEditor
-                    collection={activeRequest.collection}
-                    env={activeEnv}
-                    onSend={handleSendRequest}
-                    loading={loading}
-                  />
+                  <RequestEditor collection={activeRequest.collection} env={activeEnv} onSend={handleSendRequest} loading={loading} />
                 </div>
                 <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                   {activeRequest.response ? (
@@ -260,10 +295,7 @@ function App(): React.ReactElement {
                 </div>
                 {activeRequest.request && (
                   <div style={{ height: 200, borderTop: '1px solid #313244', overflow: 'hidden' }}>
-                    <CodeSnippetPanel
-                      request={activeRequest.request}
-                      onGenerate={handleGenerateSnippet}
-                    />
+                    <CodeSnippetPanel request={activeRequest.request} onGenerate={handleGenerateSnippet} />
                   </div>
                 )}
               </>
@@ -278,11 +310,7 @@ function App(): React.ReactElement {
         {panel === 'scenarios' && (
           <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
             <div style={{ width: 260, borderRight: '1px solid #313244', overflow: 'hidden' }}>
-              <ScenarioList
-                scenarios={scenarios}
-                onRun={handleRunScenario}
-                running={runningScenario}
-              />
+              <ScenarioList scenarios={scenarios} onRun={handleRunScenario} running={runningScenario} />
             </div>
             <div style={{ flex: 1, overflow: 'auto' }}>
               {lastScenarioResult ? (
@@ -319,11 +347,7 @@ function App(): React.ReactElement {
           </div>
         )}
 
-        {panel === 'websocket' && (
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <WebSocketPanel />
-          </div>
-        )}
+        {panel === 'websocket' && <div style={{ flex: 1, overflow: 'hidden' }}><WebSocketPanel /></div>}
 
         {panel === 'bench' && (
           <div style={{ flex: 1, overflow: 'hidden' }}>
@@ -342,33 +366,17 @@ function App(): React.ReactElement {
           </div>
         )}
 
-        {panel === 'history' && (
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <HistoryPanel entries={activeHistory} />
-          </div>
-        )}
+        {panel === 'history' && <div style={{ flex: 1, overflow: 'hidden' }}><HistoryPanel entries={activeHistory} /></div>}
 
         {panel === 'docs' && (
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            <DocViewer
-              content={docContent}
-              format={docFormat}
-              onExport={handleGenerateDocs}
-            />
+            <DocViewer content={docContent} format={docFormat} onExport={handleGenerateDocs} />
           </div>
         )}
 
-        {panel === 'env' && (
-          <div style={{ flex: 1, overflow: 'auto' }}>
-            <EnvVarTable envMap={envMap} />
-          </div>
-        )}
+        {panel === 'env' && <div style={{ flex: 1, overflow: 'auto' }}><EnvVarTable envMap={envMap} /></div>}
 
-        {panel === 'auth' && (
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <AuthManagerPanel profiles={authProfiles} />
-          </div>
-        )}
+        {panel === 'auth' && <div style={{ flex: 1, overflow: 'hidden' }}><AuthManagerPanel profiles={authProfiles} /></div>}
       </div>
     </div>
   );

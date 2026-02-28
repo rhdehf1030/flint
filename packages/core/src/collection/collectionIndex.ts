@@ -1,7 +1,7 @@
 import { readdirSync, statSync } from 'node:fs';
-import { join, extname } from 'node:path';
+import { join, extname, basename } from 'node:path';
 
-import type { CollectionRequest } from '../types/index.js';
+import type { Collection, CollectionRequest } from '../types/index.js';
 
 import { parseCollectionFile, DuplicateOperationIdError } from './collectionParser.js';
 
@@ -28,6 +28,58 @@ function walkDir(dir: string): string[] {
     }
   }
   return results;
+}
+
+/**
+ * Scan collectionDir grouping requests by first-level subfolder.
+ * - Subfolders → Collection { name: folderName, requests: [...] }
+ * - YAML files directly in collectionsDir root → Collection { name: "default" }
+ * Returns only non-empty collections.
+ */
+export function buildCollections(collectionsDir: string): Collection[] {
+  const collections: Collection[] = [];
+  let rootEntries: string[];
+  try {
+    rootEntries = readdirSync(collectionsDir);
+  } catch {
+    return collections;
+  }
+
+  const defaultRequests: CollectionRequest[] = [];
+
+  for (const entry of rootEntries) {
+    const fullPath = join(collectionsDir, entry);
+    try {
+      const stat = statSync(fullPath);
+      if (stat.isDirectory()) {
+        const requests: CollectionRequest[] = [];
+        for (const filePath of walkDir(fullPath)) {
+          try {
+            requests.push(parseCollectionFile(filePath));
+          } catch {
+            // skip unparseable files
+          }
+        }
+        if (requests.length > 0) {
+          collections.push({ name: basename(fullPath), dirPath: fullPath, requests });
+        }
+      } else if (stat.isFile() && extname(entry) === '.yaml') {
+        try {
+          defaultRequests.push(parseCollectionFile(fullPath));
+        } catch {
+          // skip unparseable files
+        }
+      }
+    } catch {
+      // skip unreadable entries
+    }
+  }
+
+  if (defaultRequests.length > 0) {
+    collections.unshift({ name: 'default', dirPath: collectionsDir, requests: defaultRequests });
+  }
+
+  return collections;
 }
 
 /**

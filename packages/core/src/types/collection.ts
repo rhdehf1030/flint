@@ -21,6 +21,12 @@ export interface FlintExtension {
   auth?: string;
 }
 
+export interface Collection {
+  name: string;
+  dirPath: string;
+  requests: CollectionRequest[];
+}
+
 export interface CollectionRequest {
   openapi: '3.0.0';
   info: {
