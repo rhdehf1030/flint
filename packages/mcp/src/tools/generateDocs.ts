@@ -12,11 +12,13 @@ export function registerGenerateDocs(server: McpServer, workspaceRoot: string): 
     {
       format: z.enum(['markdown', 'html']).optional().describe('Output format (default: markdown)'),
       outputDir: z.string().optional().describe('Output directory (default: ./docs in workspaceRoot)'),
+      workspaceRoot: z.string().optional().describe('Workspace root directory (overrides server default)'),
     },
     (args) => {
+      const ws = args.workspaceRoot ?? workspaceRoot;
       const format = args.format ?? 'markdown';
-      const outputDir = resolve(workspaceRoot, args.outputDir ?? 'docs');
-      const collectionsDir = resolve(workspaceRoot, 'collections');
+      const outputDir = resolve(ws, args.outputDir ?? 'docs');
+      const collectionsDir = resolve(ws, 'collections');
 
       const index = buildCollectionIndex(collectionsDir);
       const collections = [...index.values()];

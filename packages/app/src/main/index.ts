@@ -66,7 +66,7 @@ async function createWindow(): Promise<void> {
     minHeight: 600,
     title: 'Flint',
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, '../preload/index.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
@@ -84,11 +84,11 @@ async function createWindow(): Promise<void> {
 
   if (process.env['VITE_DEV_SERVER_URL']) {
     await mainWindow.loadURL(process.env['VITE_DEV_SERVER_URL']);
-    mainWindow.webContents.openDevTools();
   } else {
     const indexPath = join(__dirname, '../renderer/index.html');
     await mainWindow.loadFile(indexPath);
   }
+  mainWindow.webContents.openDevTools();
 }
 
 // ---------------------------------------------------------------------------
@@ -109,12 +109,12 @@ app.whenReady().then(async () => {
   // Register all IPC handlers (including workspace management)
   registerIpcHandlers(workspaceRef, config, saveWorkspaceConfig);
 
-  // Workspace dialog handler — needs access to workspaceRef and config
+  // Workspace dialog handler — pass mainWindow so dialog is not hidden behind it
   ipcMain.handle('open-workspace', async () => {
-    const result = await dialog.showOpenDialog({
-      properties: ['openDirectory'],
-      title: 'Open Flint Workspace',
-    });
+    const win = BrowserWindow.getFocusedWindow() ?? mainWindow;
+    const result = win
+      ? await dialog.showOpenDialog(win, { properties: ['openDirectory'], title: 'Open Flint Workspace' })
+      : await dialog.showOpenDialog({ properties: ['openDirectory'], title: 'Open Flint Workspace' });
     return result.filePaths[0] ?? null;
   });
 

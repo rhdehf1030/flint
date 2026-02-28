@@ -1,4 +1,4 @@
-import { resolve, dirname } from 'node:path';
+import { resolve } from 'node:path';
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
@@ -18,12 +18,14 @@ export function registerRunScenario(server: McpServer, workspaceRoot: string): v
     {
       scenarioPath: z.string().describe('Path to the scenario YAML file (absolute or relative to workspaceRoot)'),
       env: z.string().optional().describe('Environment name (default: base)'),
+      workspaceRoot: z.string().optional().describe('Workspace root directory (overrides server default)'),
     },
     async (args) => {
-      const absPath = resolve(workspaceRoot, args.scenarioPath);
+      const ws = args.workspaceRoot ?? workspaceRoot;
+      const absPath = resolve(ws, args.scenarioPath);
       const envName = args.env ?? 'base';
-      const envDir = resolve(workspaceRoot, 'environments');
-      const collectionsDir = resolve(workspaceRoot, 'collections');
+      const envDir = resolve(ws, 'environments');
+      const collectionsDir = resolve(ws, 'collections');
 
       const scenario = parseScenarioFile(absPath);
       const index = buildCollectionIndex(collectionsDir);

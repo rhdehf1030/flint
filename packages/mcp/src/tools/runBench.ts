@@ -20,12 +20,14 @@ export function registerRunBench(server: McpServer, workspaceRoot: string): void
       duration: z.number().optional().describe('Benchmark duration in seconds (default: 10)'),
       maxRequests: z.number().optional().describe('Maximum number of requests'),
       rampUpSeconds: z.number().optional().describe('Ramp-up time in seconds'),
+      workspaceRoot: z.string().optional().describe('Workspace root directory (overrides server default)'),
     },
     async (args) => {
-      const absPath = resolve(workspaceRoot, args.scenarioPath);
+      const ws = args.workspaceRoot ?? workspaceRoot;
+      const absPath = resolve(ws, args.scenarioPath);
       const envName = args.env ?? 'base';
-      const envDir = resolve(workspaceRoot, 'environments');
-      const collectionsDir = resolve(workspaceRoot, 'collections');
+      const envDir = resolve(ws, 'environments');
+      const collectionsDir = resolve(ws, 'collections');
 
       const scenario = parseScenarioFile(absPath);
       const index = buildCollectionIndex(collectionsDir);

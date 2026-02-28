@@ -12,8 +12,11 @@ export function registerCreateRequest(server: McpServer, workspaceRoot: string):
     'Create a new collection request file from an OpenAPI 3.x spec object',
     {
       spec: z.string().describe('OpenAPI 3.x collection request as a JSON string'),
+      collection: z.string().optional().describe('Collection folder name under collections/ (e.g. "users-api"). Creates folder if needed.'),
+      workspaceRoot: z.string().optional().describe('Workspace root directory (overrides server default)'),
     },
     (args) => {
+      const ws = args.workspaceRoot ?? workspaceRoot;
       const specObj = JSON.parse(args.spec) as Record<string, unknown>;
 
       // Validate using parseCollectionContent
@@ -26,7 +29,9 @@ export function registerCreateRequest(server: McpServer, workspaceRoot: string):
       const firstMethod = firstPath ? Object.values(firstPath)[0] as Record<string, unknown> : undefined;
       const operationId = firstMethod?.['operationId'] as string ?? 'operation';
 
-      const collectionsDir = resolve(workspaceRoot, 'collections');
+      const collectionsDir = args.collection
+        ? resolve(ws, 'collections', args.collection)
+        : resolve(ws, 'collections');
       mkdirSync(collectionsDir, { recursive: true });
 
       const filePath = join(collectionsDir, `${operationId}.yaml`);

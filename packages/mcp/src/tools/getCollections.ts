@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
 import { buildCollections } from '@flint/core';
 import { getOperationInfo } from '../utils/collectionUtils.js';
 
@@ -8,8 +9,12 @@ export function registerGetCollections(server: McpServer, workspaceRoot: string)
   server.tool(
     'get_collections',
     'List all available collection operations in the workspace, grouped by collection (folder)',
-    async () => {
-      const collectionsDir = resolve(workspaceRoot, 'collections');
+    {
+      workspaceRoot: z.string().optional().describe('Workspace root directory (overrides server default)'),
+    },
+    async (args) => {
+      const ws = args.workspaceRoot ?? workspaceRoot;
+      const collectionsDir = resolve(ws, 'collections');
       const collections = buildCollections(collectionsDir);
 
       const result = collections.map((col) => ({

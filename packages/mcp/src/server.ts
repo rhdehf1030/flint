@@ -11,9 +11,10 @@ import { registerMockServerStop } from './tools/mockServerStop.js';
 import { registerRunBench } from './tools/runBench.js';
 import { registerGetHistory } from './tools/getHistory.js';
 import { registerGenerateDocs } from './tools/generateDocs.js';
+import { registerCreateWorkspace } from './tools/createWorkspace.js';
 
 /**
- * Create and configure the Flint MCP server with all 11 tools registered.
+ * Create and configure the Flint MCP server with all 12 tools registered.
  */
 export function createFlintMcpServer(workspaceRoot: string): McpServer {
   const server = new McpServer({
@@ -32,6 +33,7 @@ export function createFlintMcpServer(workspaceRoot: string): McpServer {
   registerRunBench(server, workspaceRoot);
   registerGetHistory(server, workspaceRoot);
   registerGenerateDocs(server, workspaceRoot);
+  registerCreateWorkspace(server);
 
   return server;
 }

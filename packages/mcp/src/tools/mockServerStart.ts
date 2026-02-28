@@ -15,6 +15,7 @@ export function registerMockServerStart(server: McpServer, workspaceRoot: string
     'Start a mock HTTP server based on collection definitions',
     {
       port: z.number().optional().describe('Port to listen on (default: 4000)'),
+      workspaceRoot: z.string().optional().describe('Workspace root directory (overrides server default)'),
     },
     async (args) => {
       if (activeHttpServer) {
@@ -24,7 +25,8 @@ export function registerMockServerStart(server: McpServer, workspaceRoot: string
       }
 
       const port = args.port ?? 4000;
-      const collectionsDir = resolve(workspaceRoot, 'collections');
+      const ws = args.workspaceRoot ?? workspaceRoot;
+      const collectionsDir = resolve(ws, 'collections');
       const index = buildCollectionIndex(collectionsDir);
       const collections = [...index.values()];
 

@@ -11,9 +11,11 @@ export function registerGetHistory(server: McpServer, workspaceRoot: string): vo
     {
       operationId: z.string().describe('Operation ID to get history for'),
       limit: z.number().optional().describe('Maximum number of entries to return (default: 10)'),
+      workspaceRoot: z.string().optional().describe('Workspace root directory (overrides server default)'),
     },
     async (args) => {
-      const historyDir = resolve(workspaceRoot, '.flint', 'history');
+      const ws = args.workspaceRoot ?? workspaceRoot;
+      const historyDir = resolve(ws, '.flint', 'history');
       const entries = await getHistory(args.operationId, historyDir, args.limit ?? 10);
 
       return {
