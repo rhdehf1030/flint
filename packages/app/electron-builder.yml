@@ -17,24 +17,15 @@ extraResources:
     filter:
       - "**/*"
 
-mac:
-  target:
-    - dmg
-    - zip
-  icon: build/icon.icns
-  category: public.app-category.developer-tools
-
 win:
   target:
-    - nsis
-    - portable
-  icon: build/icon.ico
+    - zip
+  signingHashAlgorithms: []
+  sign: null
 
 linux:
   target:
     - AppImage
-    - deb
-  icon: build/icons
   category: Development
 
 publish: null
